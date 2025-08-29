@@ -1,6 +1,10 @@
+// Load test environment variables
+require('dotenv').config({ path: '.env.test' });
+
 const tap = require('tap');
 const supertest = require('supertest');
-const app = require('../app');
+const mongoose = require('mongoose');
+const { app, server: httpServer } = require('../app');
 const server = supertest(app);
 
 const mockUser = {
@@ -12,16 +16,32 @@ const mockUser = {
 
 let token = '';
 
+// Setup: Ensure test database is ready
+tap.test('Setup: Connect to test database', async (t) => {
+    try {
+        // Wait for MongoDB connection to be ready
+        if (mongoose.connection.readyState !== 1) {
+            await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/news-aggregator-test');
+        }
+        t.pass('Test database connected');
+        t.end();
+    } catch (error) {
+        console.error('Database connection error:', error);
+        t.fail(`Failed to connect to test database: ${error.message}`);
+        t.end();
+    }
+});
+
 // Auth tests
 
-tap.test('POST /users/signup', async (t) => { 
-    const response = await server.post('/users/signup').send(mockUser);
+tap.test('POST /users/register', async (t) => { 
+    const response = await server.post('/users/register').send(mockUser);
     t.equal(response.status, 200);
     t.end();
 });
 
-tap.test('POST /users/signup with missing email', async (t) => {
-    const response = await server.post('/users/signup').send({
+tap.test('POST /users/register with missing email', async (t) => {
+    const response = await server.post('/users/register').send({
         name: mockUser.name,
         password: mockUser.password
     });
@@ -70,6 +90,7 @@ tap.test('PUT /users/preferences', async (t) => {
         preferences: ['movies', 'comics', 'games']
     });
     t.equal(response.status, 200);
+    t.end();
 });
 
 tap.test('Check PUT /users/preferences', async (t) => {
@@ -94,8 +115,36 @@ tap.test('GET /news without token', async (t) => {
     t.end();
 });
 
-
-
-tap.teardown(() => {
-    process.exit(0);
+tap.teardown(async () => {
+    try {
+        // Only clear collections if connection exists and is open
+        if (mongoose.connection && mongoose.connection.readyState === 1) {
+            const collections = mongoose.connection.collections;
+            for (const key in collections) {
+                const collection = collections[key];
+                await collection.deleteMany({});
+            }
+            
+            // Close the database connection
+            await mongoose.connection.close();
+            console.log('Test database cleared and connection closed');
+        } else {
+            console.log('No active database connection to close');
+        }
+        
+        // Close the HTTP server
+        if (httpServer) {
+            await new Promise((resolve) => {
+                httpServer.close(() => {
+                    console.log('HTTP server closed');
+                    resolve();
+                });
+            });
+        }
+        
+        // Let the test runner handle the exit naturally
+    } catch (error) {
+        console.error('Error during teardown:', error);
+        // Let the test runner handle the exit naturally
+    }
 });
