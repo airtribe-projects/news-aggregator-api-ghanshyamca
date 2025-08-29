@@ -122,4 +122,4 @@ const getNewsForUser = async (req, res) => {
 
 module.exports = {
     getNewsForUser
-}; 
+};

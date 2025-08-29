@@ -13,4 +13,4 @@ router.post('/login', validateUserLogin, loginUser);
 router.get('/preferences', authenticateToken, getUserPreferences);
 router.put('/preferences', authenticateToken, validateUserPreferences, updateUserPreferences);
 
-module.exports = router; 
+module.exports = router;

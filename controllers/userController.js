@@ -11,7 +11,7 @@ const registerUser = async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ error: 'User with this email already exists' });
         }
-        console.log('User registered successfully', process.env.SALT_ROUNDS);
+        
         // Hash password
         const saltRounds = parseInt(process.env.SALT_ROUNDS) || 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);

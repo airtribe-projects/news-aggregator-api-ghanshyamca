@@ -12,6 +12,12 @@ const newsRoutes = require('./routes/newsRoutes');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Check if MongoDB URI is provided
+if (!process.env.MONGODB_URI) {
+    console.error('MONGODB_URI environment variable is not set. Please check your .env file.');
+    process.exit(1);
+}
+
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => {
@@ -19,6 +25,7 @@ mongoose.connect(process.env.MONGODB_URI)
     })
     .catch((err) => {
         console.error('MongoDB connection error:', err);
+        process.exit(1);
     });
 
 // Routes

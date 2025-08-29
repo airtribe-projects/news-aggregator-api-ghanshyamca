@@ -7,4 +7,4 @@ const router = express.Router();
 // Protected routes - require authentication
 router.get('/', authenticateToken, getNewsForUser);
 
-module.exports = router; 
+module.exports = router;
